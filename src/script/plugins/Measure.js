@@ -149,7 +149,7 @@ gxp.plugins.Measure = Ext.extend(gxp.plugins.Tool, {
         var measureToolTip;
         var controlOptions = Ext.apply({}, this.initialConfig.controlOptions);
         Ext.applyIf(controlOptions, {
-            geodesic: true,
+            geodesic: false,
             persist: true,
             handlerOptions: {layerOptions: {styleMap: styleMap}},
             eventListeners: {
