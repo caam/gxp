@@ -94,7 +94,7 @@ gxp.plugins.Measure = Ext.extend(gxp.plugins.Tool, {
                     symbolizer: {
                         "Point": {
                             pointRadius: 4,
-                            graphicName: "square",
+                            graphicName: "cross",
                             fillColor: "white",
                             fillOpacity: 1,
                             strokeWidth: 1,
@@ -104,13 +104,12 @@ gxp.plugins.Measure = Ext.extend(gxp.plugins.Tool, {
                         "Line": {
                             strokeWidth: 3,
                             strokeOpacity: 1,
-                            strokeColor: "#666666",
-                            strokeDashstyle: "dash"
+                            strokeColor: "#EEEE00"
                         },
                         "Polygon": {
                             strokeWidth: 2,
                             strokeOpacity: 1,
-                            strokeColor: "#666666",
+                            strokeColor: "#EEEE00",
                             fillColor: "white",
                             fillOpacity: 0.3
                         }
@@ -162,7 +161,7 @@ gxp.plugins.Measure = Ext.extend(gxp.plugins.Tool, {
                         autoHide: false,
                         closable: true,
                         draggable: false,
-                        mouseOffset: [0, 0],
+                        mouseOffset: [50, 50],
                         showDelay: 1,
                         listeners: {hide: cleanup}
                     });
