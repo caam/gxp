@@ -235,7 +235,32 @@ gxp.grid.FeatureGrid = Ext.extend(Ext.grid.GridPanel, {
     createColumnModel: function(store) {
         var columns = this.getColumns(store);
         return new Ext.grid.ColumnModel(columns);
+    },
+    getColProps: function() {
+      var res = [];
+      var miColModel=this.getColumnModel();
+      for (var i = 0; i < miColModel.getColumnCount(); i++) {
+        res.push({
+          "header": miColModel.getColumnHeader(i),
+          "isHidden": miColModel.isHidden(i),
+          "columnWidth": miColModel.getColumnWidth(i),
+        });
+      }
+      return res;
+    },
+    setColProps: function(colModel) {
+      var miColModel=this.getColumnModel(),
+          pos;
+      for (var i = 0; i < colModel.length; i++) {
+        pos = miColModel.findColumnIndex(colModel[i].header);
+        miColModel.setHidden(pos,colModel[i].isHidden);
+        miColModel.setColumnWidth(pos,colModel[i].columnWidth);
+        if (i !== pos) {
+          miColModel.moveColumn(pos,i);
+        }
+      }
     }
+
 });
 
 /** api: xtype = gxp_featuregrid */
