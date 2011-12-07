@@ -58,7 +58,9 @@ gxp.QueryPanel = Ext.extend(Ext.Panel, {
      *  ``Boolean``
      *  Query by extent.
      */
-    spatialQuery: true,
+    spatialQuery: false,
+    bufferQuery: false,
+    sigpacQuery: true,
     
     /** api: config[attributeQuery]
      *  ``Boolean``
@@ -69,7 +71,7 @@ gxp.QueryPanel = Ext.extend(Ext.Panel, {
      *  ``Boolean``
      *  Query by attributes.
      */
-    attributeQuery: true,
+    attributeQuery: false,
     
     /** private: property[selectedLayer]
      *  ``Ext.data.Record``
@@ -107,6 +109,7 @@ gxp.QueryPanel = Ext.extend(Ext.Panel, {
 
     /** i18n */
     queryByLocationText: "Query by location",
+    queryByBufferText: "Query by buffer",
     currentTextText: "Current extent",
     queryByAttributesText: "Query by attributes",
     layerText: "Layer",
@@ -187,11 +190,36 @@ gxp.QueryPanel = Ext.extend(Ext.Panel, {
             anchor: "100%",
             value: this.getFormattedMapExtent()
         });
+
+        this.queryMunicipio = new Ext.form.TextField({ fieldLabel: "Municipio", readOnly: false, anchor: "100%", value: "" });
+        this.queryPoligono = new Ext.form.TextField({ fieldLabel: "Polígono", readOnly: false, anchor: "100%", value: "" });
+        this.queryParcela = new Ext.form.TextField({ fieldLabel: "Parcela", readOnly: false, anchor: "100%", value: "" });
+        this.queryRecinto = new Ext.form.TextField({ fieldLabel: "Recinto", readOnly: false, anchor: "100%", value: "" });
+
+        this.bufferFieldX = new Ext.form.TextField({
+            fieldLabel: "X",
+            readOnly: false,
+            anchor: "100%",
+            value: this.map.getCenter()&&this.map.getCenter().lon()
+        });
+        this.bufferFieldY = new Ext.form.TextField({
+            fieldLabel: "Y",
+            readOnly: false,
+            anchor: "100%",
+            value: this.map.getCenter()&&this.map.getCenter().lat()
+        });
+        this.bufferFieldR = new Ext.form.TextField({
+            fieldLabel: "R",
+            readOnly: false,
+            anchor: "100%",
+            value: this.map.getExtent()&&(this.map.getExtent().right() - this.map.getExtent().left())
+        });
+
         this.map.events.on({
             moveend: this.updateMapExtent,
             scope: this
         });
-        
+
         this.createFilterBuilder(this.layerStore.getAt(0));
         
         this.items = [{
@@ -217,21 +245,22 @@ gxp.QueryPanel = Ext.extend(Ext.Panel, {
             }
         }, {
             xtype: "fieldset",
-            title: this.queryByLocationText,
+            title: "consultaSIGPAC",
             checkboxToggle: true,
-            collapsed: !this.spatialQuery,
+            collapsed: !this.sigpacQuery,
             anchor: "95%",
-            items: [this.mapExtentField],
+            items: [ this.queryMunicipio, this.queryPoligono, this.queryParcela, this.queryRecinto ],
             listeners: {
                 collapse: function() {
-                    this.spatialQuery = false;
+                    this.sigpacQuery = false;
                 },
                 expand: function() {
-                    this.spatialQuery = true;
+                    this.sigpacQuery = true;
                 },
                 scope: this
             }
         }, {
+
             xtype: "fieldset",
             title: this.queryByAttributesText,
             checkboxToggle: true,
@@ -247,6 +276,38 @@ gxp.QueryPanel = Ext.extend(Ext.Panel, {
                 },
                 scope: this
             }            
+        }, {
+            xtype: "fieldset",
+            title: this.queryByLocationText,
+            checkboxToggle: true,
+            collapsed: !this.spatialQuery,
+            anchor: "95%",
+            items: [this.mapExtentField],
+            listeners: {
+                collapse: function() {
+                    this.spatialQuery = false;
+                },
+                expand: function() {
+                    this.spatialQuery = true;
+                },
+                scope: this
+            }
+        }, {
+         xtype: "fieldset",
+            title: this.queryByBufferText,
+            checkboxToggle: true,
+            collapsed: !this.bufferQuery,
+            anchor: "95%",
+            items: [this.bufferFieldX, this.bufferFieldY, this.bufferFieldR],
+            listeners: {
+                collapse: function() {
+                    this.bufferQuery = false;
+                },
+                expand: function() {
+                    this.bufferQuery = true;
+                },
+                scope: this
+            }
         }];
         
         gxp.QueryPanel.superclass.initComponent.apply(this, arguments);
@@ -292,7 +353,7 @@ gxp.QueryPanel = Ext.extend(Ext.Panel, {
         this.filterBuilder = new gxp.FilterBuilder({
             //anchor: "-8px",
             attributes: this.attributeStore,
-            allowGroups: false
+            allowGroups: true
         });
         
         if(owner) {
@@ -322,6 +383,45 @@ gxp.QueryPanel = Ext.extend(Ext.Panel, {
             type: OpenLayers.Filter.Spatial.BBOX,
             value: this.map.getExtent()
         });
+        var bufferFilter = this.bufferQuery && new OpenLayers.Filter.Spatial({
+            type: OpenLayers.Filter.Spatial.DWITHIN,
+            value: new OpenLayers.Geometry.Point(
+              this.bufferFieldX.getValue(),
+              this.bufferFieldY.getValue()),
+            distance: this.bufferFieldR.getValue(),
+            distanceUnits: 'm'
+        });
+        var filtersSigpac = [];
+        var filterMunicipio = new OpenLayers.Filter.Comparison({
+          type: OpenLayers.Filter.Comparison.EQUAL_TO,
+          property: 'municipio',
+          value: this.queryMunicipio.getValue()
+        });
+        if (this.queryMunicipio.getValue().length > 0) {filtersSigpac.push(filterMunicipio);}
+        var filterPoligono = new OpenLayers.Filter.Comparison({
+          type: OpenLayers.Filter.Comparison.EQUAL_TO,
+          property: 'poligono',
+          value: this.queryPoligono.getValue()
+        });
+        if (this.queryPoligono.getValue().length > 0) {filtersSigpac.push(filterPoligono);}
+        var filterParcela = new OpenLayers.Filter.Comparison({
+          type: OpenLayers.Filter.Comparison.EQUAL_TO,
+          property: 'parcela',
+          value: this.queryParcela.getValue()
+        });
+        if (this.queryParcela.getValue().length > 0) {filtersSigpac.push(filterParcela);}
+        var filterRecinto = new OpenLayers.Filter.Comparison({
+          type: OpenLayers.Filter.Comparison.EQUAL_TO,
+          property: 'recinto',
+          value: this.queryRecinto.getValue()
+        });
+        if (this.queryRecinto.getValue().length > 0) {filtersSigpac.push(filterRecinto);}
+        var filterSigpac = this.sigpacQuery && new OpenLayers.Filter.Logical({
+           type: OpenLayers.Filter.Logical.AND,
+           filters: filtersSigpac
+        });
+
+
         var filter;
         if (attributeFilter && spatialFilter) {
             filter = new OpenLayers.Filter.Logical({
@@ -329,7 +429,7 @@ gxp.QueryPanel = Ext.extend(Ext.Panel, {
                 filters: [spatialFilter, attributeFilter]
             });
         } else {
-            filter = attributeFilter || spatialFilter;
+            filter = filterSigpac || attributeFilter || spatialFilter || bufferFilter;
         }
         return filter;
     },
