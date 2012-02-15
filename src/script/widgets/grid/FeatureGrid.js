@@ -174,7 +174,8 @@ gxp.grid.FeatureGrid = Ext.extend(Ext.grid.GridPanel, {
                 // return value.format(format);
                 var date = value;
                 if (typeof value == "string") {
-                     date = Date.parseDate(value.replace(/Z$/, ""), "c");
+                     //date = Date.parseDate(value.replace(/Z$/, ""), "c");
+                     date = Date.parseDate(value, "c"); // sdb38l
                 }
                 return date ? date.format(format) : value;
             };
