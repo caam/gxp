@@ -21,6 +21,7 @@
  */
 Ext.namespace("gxp");
 gxp.FeatureEditPopup = Ext.extend(GeoExt.Popup, {
+    id: 'fepop',
     
     /** i18n **/
     closeMsgTitle: 'Save Changes?',
@@ -29,6 +30,8 @@ gxp.FeatureEditPopup = Ext.extend(GeoExt.Popup, {
     deleteMsg: 'Are you sure you want to delete this feature?',
     editButtonText: 'Edit',
     editButtonTooltip: 'Make this feature editable',
+    copyButtonText: 'Duplicar',
+    copyButtonTooltip: 'Duplicar este elemento',
     deleteButtonText: 'Delete',
     deleteButtonTooltip: 'Delete this feature',
     cancelButtonText: 'Cancel',
@@ -149,6 +152,11 @@ gxp.FeatureEditPopup = Ext.extend(GeoExt.Popup, {
      *  ``Ext.Button``
      */
     editButton: null,
+
+    /** private: property[copyButton]
+     *  ``Ext.Button``
+     */
+    copyButton: null,
     
     /** private: property[deleteButton]
      *  ``Ext.Button``
@@ -243,8 +251,8 @@ gxp.FeatureEditPopup = Ext.extend(GeoExt.Popup, {
                         case "date":
                             format = this.dateFormat;
                             fieldCfg.editable = false;
-                            break;
-                        case "dateTime":
+                            // break; sdb38l
+                        case "dateTime": 
                             if (!format) {
                                 format = this.dateFormat + " " + this.timeFormat;
                                 // make dateTime fields editable because the
@@ -257,7 +265,8 @@ gxp.FeatureEditPopup = Ext.extend(GeoExt.Popup, {
                             listeners = {
                                 "startedit": function(el, value) {
                                     if (!(value instanceof Date)) {
-                                        var date = Date.parseDate(value.replace(/Z$/, ""), "c");
+                                        //var date = Date.parseDate(value.replace(/Z$/, ""), "c");
+                                        var date = Date.parseDate(value,"c"); // sdb38l
                                         if (date) {
                                             this.setValue(date);
                                         }
@@ -271,7 +280,8 @@ gxp.FeatureEditPopup = Ext.extend(GeoExt.Popup, {
                                     // return value.format(format);
                                     var date = value;
                                     if (typeof value == "string") {
-                                        date = Date.parseDate(value.replace(/Z$/, ""), "c");
+                                        //date = Date.parseDate(value.replace(/Z$/, ""), "c");
+                                        date = Date.parseDate(value, "c"); // sdb38l
                                     }
                                     return date ? date.format(format) : value;
                                 };
@@ -286,7 +296,7 @@ gxp.FeatureEditPopup = Ext.extend(GeoExt.Popup, {
                             break;
                     }
                 }
-                customEditors[name] = new Ext.grid.GridEditor({
+               customEditors[name] = new Ext.grid.GridEditor({
                     field: Ext.create(fieldCfg),
                     listeners: listeners
                 });
@@ -304,6 +314,14 @@ gxp.FeatureEditPopup = Ext.extend(GeoExt.Popup, {
             tooltip: this.editButtonTooltip,
             iconCls: "edit",
             handler: this.startEditing,
+            scope: this
+        });
+
+        this.copyButton = new Ext.Button({
+            text: this.copyButtonText,
+            tooltip: this.copyButtonTooltip,
+            iconCls: "copy",
+            handler: this.startCopying,
             scope: this
         });
         
@@ -373,6 +391,8 @@ gxp.FeatureEditPopup = Ext.extend(GeoExt.Popup, {
                 Ext.data.Store.prototype.sort = origSort;
             }
         });
+        //this.grid.getColumnModel().dateFormat='d-m-Y'; // sdb38l
+        //this.grid.getColumnModel().altFormats='d-m-Y'; // sdb38l
         
         /**
          * TODO: This is a workaround for getting attributes with undefined
@@ -389,6 +409,7 @@ gxp.FeatureEditPopup = Ext.extend(GeoExt.Popup, {
             hidden: this.readOnly,
             items: [
                 this.editButton,
+                this.copyButton,
                 this.deleteButton,
                 this.saveButton,
                 this.cancelButton
@@ -452,6 +473,7 @@ gxp.FeatureEditPopup = Ext.extend(GeoExt.Popup, {
             this.anc && this.unanchorPopup();
 
             this.editButton.hide();
+            this.copyButton.hide();
             this.deleteButton.hide();
             this.saveButton.show();
             this.cancelButton.show();
@@ -469,6 +491,14 @@ gxp.FeatureEditPopup = Ext.extend(GeoExt.Popup, {
                 this.modifyControl.selectFeature(this.feature);
             }
         }
+    },
+
+    /** private: method[startCopying]
+     */
+    startCopying: function() {
+        this.feature.attributes.nidauto=null;
+        this.feature.state=OpenLayers.State.INSERT;
+        this.startEditing();
     },
     
     /** private: method[stopEditing]
@@ -522,6 +552,7 @@ gxp.FeatureEditPopup = Ext.extend(GeoExt.Popup, {
                 this.cancelButton.hide();
                 this.saveButton.hide();
                 this.editButton.show();
+                this.copyButton.show();
                 this.allowDelete && this.deleteButton.show();
             }
             
